@@ -1,0 +1,61 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "kihara@gmail.com",
+    "longName": "RaceTime",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/icon_28x28.png",
+                "menuIcon": true,
+                "name": "image_icon",
+                "type": "png"
+            },
+            {
+                "file": "images/image_view.png",
+                "name": "IMAGE_VIEW",
+                "type": "png"
+            },
+            {
+                "file": "images/image_stop.png",
+                "name": "IMAGE_STOP",
+                "type": "png"
+            },
+            {
+                "file": "images/image_save.png",
+                "name": "IMAGE_SAVE",
+                "type": "png"
+            },
+            {
+                "file": "images/image_reset.png",
+                "name": "IMAGE_RESET",
+                "type": "png"
+            },
+            {
+                "file": "images/image_lap.png",
+                "name": "IMAGE_LAP",
+                "type": "png"
+            },
+            {
+                "file": "images/image_menu.png",
+                "name": "IMAGE_MENU",
+                "type": "png"
+            },
+            {
+                "file": "images/image_start.png",
+                "name": "IMAGE_START",
+                "type": "png"
+            }
+        ]
+    },
+    "shortName": "RaceTime",
+    "uuid": "5e4a1472-7f09-44aa-b7b7-c75ab1436f08",
+    "versionCode": 1,
+    "versionLabel": "1.3",
+    "watchapp": {
+        "watchface": false
+    }
+}
