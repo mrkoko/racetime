@@ -17,18 +17,15 @@ cdt_t *cdt_get(void) {
 }
 
 void cdt_init(void) {
-//  if (persist_exists(KEY_CDT)) {
-//    persist_read_data(KEY_CDT, &cdt, sizeof(cdt));
-//    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_CDT exists");
-//  } else {
+  if (persist_exists(KEY_CDT)) {
+    persist_read_data(KEY_CDT, &cdt, sizeof(cdt));
+  } else {
     cdt_reset_all();
-//    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_CDT does not exist");
-//  }
+  }
 }
 
 void cdt_deinit(void) {
-//  if (persist_exists(KEY_CDT)) persist_delete(KEY_CDT);
-//  persist_write_data(KEY_CDT, &cdt, sizeof(cdt));
+  persist_write_data(KEY_CDT, &cdt, sizeof(cdt));
 }
 
 // Call during stopwatch reset or save

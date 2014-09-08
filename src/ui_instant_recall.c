@@ -76,12 +76,10 @@ void window_load(Window *window) {
   strcpy(str_right, "");
   for (int i=session[session_index].end_index-1; i>=session[session_index].start_index ; i--) {
     SWTime lap_time = get_lap_time(session[session_index], i);
-    snprintf(substr,
-             sizeof(substr),
-             "%d:%02d:%02d\n",
-             lap_time.hour,
-             lap_time.minute,     
-             lap_time.second);
+    if (lap_time.hour == 0)
+      snprintf(substr, sizeof(substr), "%d:%02d\n", lap_time.minute, lap_time.second);
+    else
+      snprintf(substr, sizeof(substr), "%d:%02d:%02d\n", lap_time.hour, lap_time.minute, lap_time.second);
     strcat(str_right, substr);
   }
   GSize max_size_right = graphics_text_layout_get_content_size(

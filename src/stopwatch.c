@@ -1,11 +1,8 @@
 #include "pebble.h"
 #include "stopwatch.h"
 #include "cdt.h"
-#include "ui_review.h"
 #include "ui_instant_recall.h"
 #include "ui_main_menu.h"
-#include "ui_timer_config.h"
-#include "ui_preset_assistant.h"
 
 // Enums
 enum enum_sw_state {SW_STATE_IDLE,
@@ -43,8 +40,6 @@ static void window_disappear(Window *);
 static void window_unload(Window *);
 static void move_to_state(uint8_t);
 static void update_display_guide(uint8_t);
-static void watchface_init(void);
-static void persist_deinit(void);
 
 static Window *window;
 
@@ -71,8 +66,8 @@ static GBitmap *gbitmap_view;
 static Layer *layer_warning;
 static char *warning_font_key;
 static char warning_str_title[7];
-static char warning_str_long[28];
-static char warning_str_short[16];
+static char warning_str_value[28];
+static char warning_str_name[16];
 static uint8_t warning_flag;
 static signed int ms_to_clear_warning;
 
@@ -107,7 +102,7 @@ SWTime get_lap_time(Session_t s, uint8_t abs_lap_index) {
 // Short-hand for setting warning text layer
 static void set_warning_text(char *font_key, char *str) {
   warning_font_key = font_key;
-  strcpy(warning_str_long, str);
+  strcpy(warning_str_value, str);
   warning_flag = WARNING_FLAG_MESSAGE;
   layer_mark_dirty(layer_warning);
 }
@@ -210,12 +205,12 @@ static void record_lap() {
       } else {
         snprintf(substr, sizeof(substr), "%d\n", cdt_delta.second);
       }
-      strcpy(warning_str_long, cdt_delta_minus ? "-" : "+");
-      strcat(warning_str_long, substr);
-      strcpy(warning_str_short, "Timer\nSplit\nLap");
+      strcpy(warning_str_value, cdt_delta_minus ? "-" : "+");
+      strcat(warning_str_value, substr);
+      strcpy(warning_str_name, "Timer\nSplit\nLap");
     } else {
-      strcpy(warning_str_long,  "");
-      strcpy(warning_str_short, "Split\nLap");
+      strcpy(warning_str_value,  "");
+      strcpy(warning_str_name, "Split\nLap");
     }
     
     // Display split time
@@ -223,14 +218,14 @@ static void record_lap() {
       snprintf(substr, sizeof(substr), "%d:%02d:%02d\n", prev_split_time.hour, prev_split_time.minute, prev_split_time.second);
     else
       snprintf(substr, sizeof(substr), "%d:%02d\n", prev_split_time.minute, prev_split_time.second);
-    strcat(warning_str_long, substr);
+    strcat(warning_str_value, substr);
     
     // Display lap time
     if (prev_lap_time.hour > 0)
       snprintf(substr, sizeof(substr), "%d:%02d:%02d\n", prev_lap_time.hour, prev_lap_time.minute, prev_lap_time.second);
     else
       snprintf(substr, sizeof(substr), "%d:%02d\n", prev_lap_time.minute, prev_lap_time.second);
-    strcat(warning_str_long, substr);
+    strcat(warning_str_value, substr);
     
     // Push temporary warning message
     set_warning_lap(FONT_KEY_GOTHIC_24_BOLD);
@@ -272,7 +267,7 @@ static void layer_warning_update_callback(Layer *layer, GContext *ctx) {
       return;
     case WARNING_FLAG_MESSAGE:
       content_size[0] = graphics_text_layout_get_content_size(
-                          warning_str_long, fonts_get_system_font(warning_font_key), frame,
+                          warning_str_value, fonts_get_system_font(warning_font_key), frame,
                           GTextOverflowModeWordWrap, GTextAlignmentCenter);
       resized_text[0] = GRect((frame.size.w-content_size[0].w)/2, (frame.size.h-content_size[0].h)/2-5,
                               content_size[0].w, content_size[0].h);
@@ -287,7 +282,7 @@ static void layer_warning_update_callback(Layer *layer, GContext *ctx) {
   
       // Draw text
       graphics_context_set_text_color(ctx, GColorBlack);
-      graphics_draw_text(ctx, warning_str_long, fonts_get_system_font(warning_font_key), resized_text[0],
+      graphics_draw_text(ctx, warning_str_value, fonts_get_system_font(warning_font_key), resized_text[0],
                          GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
       break;
     case WARNING_FLAG_LAP:
@@ -296,10 +291,10 @@ static void layer_warning_update_callback(Layer *layer, GContext *ctx) {
                           warning_str_title, fonts_get_system_font(warning_font_key), frame,
                           GTextOverflowModeWordWrap, GTextAlignmentCenter);
       content_size[1] = graphics_text_layout_get_content_size(
-                          warning_str_short, fonts_get_system_font(warning_font_key), frame,
+                          warning_str_name, fonts_get_system_font(warning_font_key), frame,
                           GTextOverflowModeWordWrap, GTextAlignmentRight);
       content_size[2] = graphics_text_layout_get_content_size(
-                          warning_str_long, fonts_get_system_font(warning_font_key), frame,
+                          warning_str_value, fonts_get_system_font(warning_font_key), frame,
                           GTextOverflowModeWordWrap, GTextAlignmentRight);
       
       resized_text[0] = GRect((frame.size.w - content_size[1].w - content_size[2].w - 10)/2,
@@ -329,9 +324,9 @@ static void layer_warning_update_callback(Layer *layer, GContext *ctx) {
       graphics_context_set_text_color(ctx, GColorBlack);
       graphics_draw_text(ctx, warning_str_title, fonts_get_system_font(warning_font_key), resized_text[0],
                          GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
-      graphics_draw_text(ctx, warning_str_short, fonts_get_system_font(warning_font_key), resized_text[1],
+      graphics_draw_text(ctx, warning_str_name, fonts_get_system_font(warning_font_key), resized_text[1],
                          GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
-      graphics_draw_text(ctx, warning_str_long, fonts_get_system_font(warning_font_key), resized_text[2],
+      graphics_draw_text(ctx, warning_str_value, fonts_get_system_font(warning_font_key), resized_text[2],
                          GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
       break;
   }
@@ -459,9 +454,9 @@ static void timer_callback(void *data) {
   update_time();
   update_display();
   
-  if (ms_to_clear_warning > 0) {
+  if (stopwatch.sw_state == SW_STATE_LAP_RECORD) {
     ms_to_clear_warning -= SW_STEP_MS_SHORT;
-    if (ms_to_clear_warning < 0) {
+    if (ms_to_clear_warning <= 0) {
       clear_warning_text();
       move_to_state((stopwatch.sw_state == SW_STATE_LAP_RECORD) ? SW_STATE_RUN : stopwatch.sw_state);
     }
@@ -695,114 +690,8 @@ static void click_config_provider(void *context) {
 }
 //----- End single, long, raw click handlers and stopwatch state transitions
 
-// Initialize
-static void init(void) {  
-  // Initialize countdown timer
-  cdt_init();
-  
-  // Begin persist-initialization
-  if (persist_exists(KEY_SPLIT_MEMORY)) {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_SPLIT_MEMORY found");
-  } else {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_SPLIT_MEMORY not found");
-  }
-  
-  if (persist_exists(KEY_SESSION) &&
-      persist_exists(KEY_SAVE_TIME) &&
-      persist_exists(KEY_STOPWATCH) &&
-      persist_exists(KEY_SESSION_INDEX)) {
-    persist_read_data(KEY_SESSION, &session, sizeof(session));
-    persist_read_data(KEY_SPLIT_MEMORY, &split_memory, sizeof(split_memory));
-    persist_read_data(KEY_SAVE_TIME, &save_time, sizeof(save_time));
-    persist_read_data(KEY_STOPWATCH, &stopwatch, sizeof(stopwatch));
-    session_index = persist_read_int(KEY_SESSION_INDEX);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_SESSION, KEY_SPLIT_MEMORY, KEY_SAVE_TIME, KEY_SESSION_INDEX found");
-  } else {
-    for (int i=0; i < NUM_LAP_MEMORY; i++) {
-      session[i]=(Session_t){0, 0};
-      split_memory[i] = (SWTime){0, 0, 0, 0};
-      save_time[i]    = 0;
-    }
-    stopwatch = (Stopwatch_t){
-      .time_elapsed = {0, 0},
-      .time_current = {0, 0},
-      .time_start   = {0, 0},
-      .time_offset  = {0, 0},
-      .sw_state     = SW_STATE_IDLE,
-    };
-    session_index = 0;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_SESSION, KEY_SPLIT_MEMORY, KEY_SAVE_TIME, KEY_SESSION_INDEX not found");
-  }
-  if (persist_exists(KEY_INVERT_COLOR)) {
-    invert_color = persist_read_bool(KEY_INVERT_COLOR);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_INVERT_COLOR found\n");
-  } else {
-    invert_color = false;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_INVERT_COLOR not found\n");
-  }
-  // End persist-initialization
-
-  ms_to_clear_warning = 0;
-  
-  warning_font_key = FONT_KEY_GOTHIC_28;
-  strcpy(warning_str_short, "");
-  strcpy(warning_str_long, "");
-  
-  // TODO: remove later. Test-only initialization
-  //time_offset = (WatchTime_t){.s=10760, .ms=0};
-
-  // Data persistence
-  watchface_init();
-  
-  // Create all window layers
-  ui_instant_recall_init();
-  ui_main_menu_init();
-  ui_review_init();
-  ui_timer_config_init();
-  ui_preset_assistant_init();
-  
-  // Initialize window hander
-  window = window_create();
-  window_set_click_config_provider(window, click_config_provider);
-  window_set_window_handlers(window, (WindowHandlers) {
-    .load = window_load,
-    .appear = window_appear,
-    .disappear = window_disappear,
-    .unload = window_unload
-  });
-  window_set_background_color(window, GColorWhite);
-  window_stack_push(window, false);
-}
-
-// Deinitialize
-static void deinit(void) {
-  /*
-  char str[9];
-  time_t time_ms(&tloc, &ms);
-  uint16_t strftime(str, sizeof(str), "%I:%M:%S", localtime(&tloc));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Started deinit: %s.%d\n", str, ms);
-  */
-  
-  cdt_deinit();
-  persist_deinit();
-  
-  // Destroy all window layers
-  ui_instant_recall_deinit();
-  ui_main_menu_deinit();
-  ui_review_deinit();
-  ui_timer_config_deinit();
-  ui_preset_assistant_deinit();
-  
-  window_destroy(window);
-  
-  /*
-  time_ms(&tloc, &ms);
-  strftime(str, sizeof(str), "%I:%M:%S", localtime(&tloc));
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Finished deinit: %s.%d\n", str, ms);
-  */
-}
-
-void watchface_init(void) {
+// Initialize watchface layout
+static void watchface_init(void) {
   for (int row=0; row < NUM_ROWS; row++) {
     watchface_digit[row][0].frame     = GRect(0*WIDTH_BITHAM34MN,                    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
     watchface_digit[row][1].frame     = GRect(1*WIDTH_BITHAM34MN,                    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
@@ -825,28 +714,89 @@ void watchface_init(void) {
   }
 }
 
-// Save persistent data
-void persist_deinit(void) {
+// Parent init function
+static void init(void) {  
+  // Initialize countdown timer
+  cdt_init();
   
-  if (persist_exists(KEY_SPLIT_MEMORY)) persist_delete(KEY_SPLIT_MEMORY);
+  // Begin persist-initialization
+  if (persist_exists(KEY_SESSION) &&
+      persist_exists(KEY_SPLIT_MEMORY) &&
+      persist_exists(KEY_SAVE_TIME) &&
+      persist_exists(KEY_STOPWATCH) &&
+      persist_exists(KEY_SESSION_INDEX)) {
+    persist_read_data(KEY_SESSION, &session, sizeof(session));
+    persist_read_data(KEY_SPLIT_MEMORY, &split_memory, sizeof(split_memory));
+    persist_read_data(KEY_SAVE_TIME, &save_time, sizeof(save_time));
+    persist_read_data(KEY_STOPWATCH, &stopwatch, sizeof(stopwatch));
+    session_index = persist_read_int(KEY_SESSION_INDEX);
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_SESSION, KEY_SPLIT_MEMORY, KEY_SAVE_TIME, KEY_SESSION_INDEX found");
+  } else {
+    for (int i=0; i < NUM_LAP_MEMORY; i++) {
+      session[i]      = (Session_t){0, 0};
+      split_memory[i] = (SWTime){0, 0, 0, 0};
+      save_time[i]    = 0;
+    }
+    stopwatch = (Stopwatch_t){
+      .time_elapsed = {0, 0},
+      .time_current = {0, 0},
+      .time_start   = {0, 0},
+      .time_offset  = {0, 0},
+      .sw_state     = SW_STATE_IDLE,
+    };
+    session_index = 0;
+    //APP_LOG(APP_LOG_LEVEL_DEBUG, "KEY_SESSION, KEY_SPLIT_MEMORY, KEY_SAVE_TIME, KEY_SESSION_INDEX not found");
+  }
+  
+  // Appearance: inverted, or regular
+  invert_color = persist_exists(KEY_INVERT_COLOR) ? persist_read_bool(KEY_INVERT_COLOR) : false;
+  // End persist-initialization
+
+  ms_to_clear_warning = 0;
+  warning_font_key = FONT_KEY_GOTHIC_28;
+  strcpy(warning_str_name, "");
+  strcpy(warning_str_value, "");
+
+  // Initialize watchface layout
+  watchface_init();
+  
+  // Create all window layers
+  ui_instant_recall_init();
+  ui_main_menu_init();
+
+  // Initialize window hander
+  window = window_create();
+  window_set_click_config_provider(window, click_config_provider);
+  window_set_window_handlers(window, (WindowHandlers) {
+    .load = window_load,
+    .appear = window_appear,
+    .disappear = window_disappear,
+    .unload = window_unload
+  });
+  window_set_background_color(window, GColorWhite);
+  window_stack_push(window, false);
+}
+
+// Deinit: save persistent data
+static void persist_deinit(void) {
   persist_write_data(KEY_SPLIT_MEMORY, &split_memory, sizeof(split_memory));
-  
-  /*
-  if (persist_exists(KEY_SESSION)) persist_delete(KEY_SESSION);
   persist_write_data(KEY_SESSION, &session, sizeof(session));
-  
-  if (persist_exists(KEY_STOPWATCH)) persist_delete(KEY_STOPWATCH);
   persist_write_data(KEY_STOPWATCH, &stopwatch, sizeof(stopwatch));
-  
-  if (persist_exists(KEY_SAVE_TIME)) persist_delete(KEY_SAVE_TIME);
   persist_write_data(KEY_SAVE_TIME, &save_time, sizeof(save_time));
-  */
-  
-  if (persist_exists(KEY_SESSION_INDEX)) persist_delete(KEY_SESSION_INDEX);
   persist_write_int(KEY_SESSION_INDEX, session_index);
-  
-  if (persist_exists(KEY_INVERT_COLOR)) persist_delete(KEY_INVERT_COLOR);
   persist_write_bool(KEY_INVERT_COLOR, invert_color);
+}
+
+// Deinitialize
+static void deinit(void) {
+  cdt_deinit();
+  persist_deinit();
+  
+  // Destroy all window layers
+  ui_instant_recall_deinit();
+  ui_main_menu_deinit();
+  
+  window_destroy(window);
 }
 
 int main(void) {

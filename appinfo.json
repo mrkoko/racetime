@@ -54,7 +54,7 @@
     "shortName": "RaceTime",
     "uuid": "5e4a1472-7f09-44aa-b7b7-c75ab1436f08",
     "versionCode": 1,
-    "versionLabel": "1.3",
+    "versionLabel": "1.4",
     "watchapp": {
         "watchface": false
     }

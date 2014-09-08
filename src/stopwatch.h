@@ -1,6 +1,5 @@
 #ifndef STOPWATCH_H
 #define STOPWATCH_H
-
 #include "swtime.h"
 
 #define CLICK_HOLD_MS 1000
