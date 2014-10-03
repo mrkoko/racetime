@@ -51,6 +51,7 @@ static char text_header[3][11];
 static Layer *layer_watchface;
 static WatchfaceDigit_t watchface_digit[NUM_ROWS][NUM_DIGITS];
 static WatchfaceDigit_t watchface_delimiter[NUM_ROWS][NUM_DELIMITERS];
+static char watchface_row_text[NUM_ROWS][9];
 
 // Guide bitmap on the right side
 static BitmapLayer *bitmap_layer[NUM_ROWS];
@@ -248,12 +249,10 @@ static void stop_sw() {
 static void layer_watchface_update_callback(Layer *layer, GContext *ctx) {
   graphics_context_set_text_color(ctx, GColorBlack);
   for (int i=0; i<NUM_ROWS; i++) {
-    for (int j=0; j<NUM_DIGITS; j++)
+    for (int j=0; j<NUM_DIGITS; j++) {
       graphics_draw_text(ctx, watchface_digit[i][j].str, watchface_digit[i][j].font, watchface_digit[i][j].frame,
                          GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
-    for (int j=0; j<NUM_DELIMITERS; j++)
-      graphics_draw_text(ctx, watchface_delimiter[i][j].str, watchface_delimiter[i][j].font, watchface_delimiter[i][j].frame,
-                         GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+    }
   }
 }
 
@@ -370,22 +369,22 @@ static void update_display(void) {
   
   // 1st row: display cdt time
   row = 0;
-  strcpy(watchface_delimiter[row][0].str, ":");
-  strcpy(watchface_delimiter[row][1].str, ":");
+  strcpy(watchface_digit[row][2].str, ":");
+  strcpy(watchface_digit[row][5].str, ":");
   if (cdt->enable) {
     snprintf(watchface_digit[row][0].str, 2, (cdt->overflow==true) ? "+" : "-");
     snprintf(watchface_digit[row][1].str, 2, "%d", cdt->display.hour%10);
-    snprintf(watchface_digit[row][2].str, 2, "%d", cdt->display.minute/10);
-    snprintf(watchface_digit[row][3].str, 2, "%d", cdt->display.minute%10);
-    snprintf(watchface_digit[row][4].str, 2, "%d", cdt->display.second/10);
-    snprintf(watchface_digit[row][5].str, 2, "%d", cdt->display.second%10);
+    snprintf(watchface_digit[row][3].str, 2, "%d", cdt->display.minute/10);
+    snprintf(watchface_digit[row][4].str, 2, "%d", cdt->display.minute%10);
+    snprintf(watchface_digit[row][6].str, 2, "%d", cdt->display.second/10);
+    snprintf(watchface_digit[row][7].str, 2, "%d", cdt->display.second%10);
   } else {
     strcpy(watchface_digit[row][0].str, " ");
     strcpy(watchface_digit[row][1].str, "-");
-    strcpy(watchface_digit[row][2].str, "-");
     strcpy(watchface_digit[row][3].str, "-");
     strcpy(watchface_digit[row][4].str, "-");
-    strcpy(watchface_digit[row][5].str, "-");
+    strcpy(watchface_digit[row][6].str, "-");
+    strcpy(watchface_digit[row][7].str, "-");
   }
   
   // 2nd row, display total elapsed time
@@ -394,47 +393,47 @@ static void update_display(void) {
     snprintf(watchface_digit[row][0].str, 2, "%d", sw_elapsed.hour/10);
     if (sw_elapsed.hour<10) strcpy(watchface_digit[row][0].str, "");
     snprintf(watchface_digit[row][1].str, 2, "%d", sw_elapsed.hour%10);
-    snprintf(watchface_digit[row][2].str, 2, "%d", sw_elapsed.minute/10);
-    snprintf(watchface_digit[row][3].str, 2, "%d", sw_elapsed.minute%10);
-    snprintf(watchface_digit[row][4].str, 2, "%d", sw_elapsed.second/10);
-    snprintf(watchface_digit[row][5].str, 2, "%d", sw_elapsed.second%10);
-    strcpy(watchface_delimiter[row][0].str, ":");
-    strcpy(watchface_delimiter[row][1].str, ":");
+    strcpy(watchface_delimiter[row][2].str, ":");
+    snprintf(watchface_digit[row][3].str, 2, "%d", sw_elapsed.minute/10);
+    snprintf(watchface_digit[row][4].str, 2, "%d", sw_elapsed.minute%10);
+    strcpy(watchface_delimiter[row][5].str, ":");
+    snprintf(watchface_digit[row][6].str, 2, "%d", sw_elapsed.second/10);
+    snprintf(watchface_digit[row][7].str, 2, "%d", sw_elapsed.second%10);
   } else {
-    snprintf(watchface_digit[row][0].str, 2, "%d", sw_elapsed.minute/10);
     if (sw_elapsed.minute<10) strcpy(watchface_digit[row][0].str, "");
+    else snprintf(watchface_digit[row][0].str, 2, "%d", sw_elapsed.minute/10);
     snprintf(watchface_digit[row][1].str, 2, "%d", sw_elapsed.minute%10);
-    snprintf(watchface_digit[row][2].str, 2, "%d", sw_elapsed.second/10);
-    snprintf(watchface_digit[row][3].str, 2, "%d", sw_elapsed.second%10);
-    snprintf(watchface_digit[row][4].str, 2, "%d", sw_elapsed.centisecond/10);
-    snprintf(watchface_digit[row][5].str, 2, "%d", sw_elapsed.centisecond%10);
-    strcpy(watchface_delimiter[row][0].str, ":");
-    strcpy(watchface_delimiter[row][1].str, ".");
+    strcpy(watchface_delimiter[row][2].str, ":");
+    snprintf(watchface_digit[row][3].str, 2, "%d", sw_elapsed.second/10);
+    snprintf(watchface_digit[row][4].str, 2, "%d", sw_elapsed.second%10);
+        strcpy(watchface_delimiter[row][5].str, ".");
+    snprintf(watchface_digit[row][6].str, 2, "%d", sw_elapsed.centisecond/10);
+    snprintf(watchface_digit[row][7].str, 2, "%d", sw_elapsed.centisecond%10);
   }
   
   // 3rd row: display lap time
   row = 2;
   SWTime lap_time = get_lap_time(session[session_index], session[session_index].end_index);
   if (lap_time.hour > 0) {
-    snprintf(watchface_digit[row][0].str, 2, "%d", lap_time.hour/10);
-    if (lap_time.hour<10) strcpy(watchface_digit[row][0].str, ""); 
+    if (lap_time.hour<10) strcpy(watchface_digit[row][0].str, "");
+    else snprintf(watchface_digit[row][0].str, 2, "%d", lap_time.hour/10);
     snprintf(watchface_digit[row][1].str, 2, "%d", lap_time.hour%10);
-    snprintf(watchface_digit[row][2].str, 2, "%d", lap_time.minute/10);
-    snprintf(watchface_digit[row][3].str, 2, "%d", lap_time.minute%10);
-    snprintf(watchface_digit[row][4].str, 2, "%d", lap_time.second/10);
-    snprintf(watchface_digit[row][5].str, 2, "%d", lap_time.second%10);
-    strcpy(watchface_delimiter[row][0].str, ":");
-    strcpy(watchface_delimiter[row][1].str, ":");
+    strcpy(watchface_delimiter[row][2].str, ":");
+    snprintf(watchface_digit[row][3].str, 2, "%d", lap_time.minute/10);
+    snprintf(watchface_digit[row][4].str, 2, "%d", lap_time.minute%10);
+    strcpy(watchface_delimiter[row][5].str, ":");
+    snprintf(watchface_digit[row][6].str, 2, "%d", lap_time.second/10);
+    snprintf(watchface_digit[row][7].str, 2, "%d", lap_time.second%10);
   } else {
-    snprintf(watchface_digit[row][0].str, 2, "%d", lap_time.minute/10);
-    if (lap_time.minute<10) strcpy(watchface_digit[row][0].str, ""); 
+    if (lap_time.minute<10) strcpy(watchface_digit[row][0].str, "");
+    else snprintf(watchface_digit[row][0].str, 2, "%d", lap_time.minute/10);
     snprintf(watchface_digit[row][1].str, 2, "%d", lap_time.minute%10);
-    snprintf(watchface_digit[row][2].str, 2, "%d", lap_time.second/10);
-    snprintf(watchface_digit[row][3].str, 2, "%d", lap_time.second%10);
-    snprintf(watchface_digit[row][4].str, 2, "%d", lap_time.centisecond/10);
-    snprintf(watchface_digit[row][5].str, 2, "%d", lap_time.centisecond%10);
-    strcpy(watchface_delimiter[row][0].str, ":");
-    strcpy(watchface_delimiter[row][1].str, ".");
+    strcpy(watchface_digit[row][2].str, ":");
+    snprintf(watchface_digit[row][3].str, 2, "%d", lap_time.second/10);
+    snprintf(watchface_digit[row][4].str, 2, "%d", lap_time.second%10);
+    strcpy(watchface_digit[row][5].str, ".");
+    snprintf(watchface_digit[row][6].str, 2, "%d", lap_time.centisecond/10);
+    snprintf(watchface_digit[row][7].str, 2, "%d", lap_time.centisecond%10);
   }
   
   // No need to mark the layer dirty - text_layer_set_text will take care of that
@@ -695,22 +694,22 @@ static void watchface_init(void) {
   for (int row=0; row < NUM_ROWS; row++) {
     watchface_digit[row][0].frame     = GRect(0*WIDTH_BITHAM34MN,                    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
     watchface_digit[row][1].frame     = GRect(1*WIDTH_BITHAM34MN,                    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
-    watchface_digit[row][2].frame     = GRect(2*WIDTH_BITHAM34MN+WIDTH_DELIMITER,    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
-    watchface_digit[row][3].frame     = GRect(3*WIDTH_BITHAM34MN+WIDTH_DELIMITER,    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
-    watchface_digit[row][4].frame     = GRect(4*WIDTH_BITHAM34MN+WIDTH_DELIMITER*2,  12+(HEIGHT_BITHAM34MN-HEIGHT_GOTHIC28B)+ROW_HEIGHT*row, WIDTH_GOTHIC28B, HEIGHT_GOTHIC28B);
-    watchface_digit[row][5].frame     = GRect(4*WIDTH_BITHAM34MN+WIDTH_DELIMITER*2+WIDTH_GOTHIC28B, 12+(HEIGHT_BITHAM34MN-HEIGHT_GOTHIC28B)+ROW_HEIGHT*row, WIDTH_GOTHIC28B, HEIGHT_GOTHIC28B);
-    watchface_delimiter[row][0].frame = GRect(2*WIDTH_BITHAM34MN,                    12+ROW_HEIGHT*row, WIDTH_DELIMITER,  HEIGHT_BITHAM34MN);
-    watchface_delimiter[row][1].frame = GRect(4*WIDTH_BITHAM34MN+WIDTH_DELIMITER,    12+ROW_HEIGHT*row, WIDTH_DELIMITER,  HEIGHT_BITHAM34MN);
-
+    watchface_digit[row][2].frame     = GRect(2*WIDTH_BITHAM34MN,                    12+ROW_HEIGHT*row, WIDTH_DELIMITER,  HEIGHT_BITHAM34MN);
+    watchface_digit[row][3].frame     = GRect(2*WIDTH_BITHAM34MN+WIDTH_DELIMITER,    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
+    watchface_digit[row][4].frame     = GRect(3*WIDTH_BITHAM34MN+WIDTH_DELIMITER,    12+ROW_HEIGHT*row, WIDTH_BITHAM34MN, HEIGHT_BITHAM34MN);
+    watchface_digit[row][5].frame     = GRect(4*WIDTH_BITHAM34MN+WIDTH_DELIMITER,    12+ROW_HEIGHT*row, WIDTH_DELIMITER,  HEIGHT_BITHAM34MN);
+    watchface_digit[row][6].frame     = GRect(4*WIDTH_BITHAM34MN+WIDTH_DELIMITER*2,  12+(HEIGHT_BITHAM34MN-HEIGHT_GOTHIC28B)+ROW_HEIGHT*row, WIDTH_GOTHIC28B, HEIGHT_GOTHIC28B);
+    watchface_digit[row][7].frame     = GRect(4*WIDTH_BITHAM34MN+WIDTH_DELIMITER*2+WIDTH_GOTHIC28B, 12+(HEIGHT_BITHAM34MN-HEIGHT_GOTHIC28B)+ROW_HEIGHT*row, WIDTH_GOTHIC28B, HEIGHT_GOTHIC28B);
+    
     // Set font
     watchface_digit[row][0].font = fonts_get_system_font((row == 0) ? FONT_KEY_BITHAM_30_BLACK : FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
     watchface_digit[row][1].font = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
     watchface_digit[row][2].font = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
     watchface_digit[row][3].font = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
-    watchface_digit[row][4].font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
-    watchface_digit[row][5].font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
-    watchface_delimiter[row][0].font = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
-    watchface_delimiter[row][1].font = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS); 
+    watchface_digit[row][4].font = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
+    watchface_digit[row][5].font = fonts_get_system_font(FONT_KEY_BITHAM_34_MEDIUM_NUMBERS);
+    watchface_digit[row][6].font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
+    watchface_digit[row][7].font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
   }
 }
 

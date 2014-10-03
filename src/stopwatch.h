@@ -7,8 +7,7 @@
 #define MAX_STRLEN 5
 #define NUM_ROWS 3
 #define NUM_GUIDES 3
-#define NUM_DIGITS 6
-#define NUM_DELIMITERS 2
+#define NUM_DIGITS 8
 #define NUM_LAP_MEMORY 50
 #define ROW_HEIGHT 49
 
